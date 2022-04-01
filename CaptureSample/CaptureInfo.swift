@@ -26,11 +26,13 @@ struct CaptureInfo: Identifiable {
         case noSuchDirectory(URL)
     }
     
-    static let imageSuffix: String = ".HEIC"
+    //static let imageSuffix: String = ".HEIC"
+    static let imageSuffix: String = ".JPEG"
     
     /// This is a unique identifier for the capture sample.
     let id: UInt32
     
+    /// 여기 디렉토리가아니라 저장하는걸 사진첩으로..
     /// This is a URL pointing to the sample's parent directory.
     let captureDir: URL
     

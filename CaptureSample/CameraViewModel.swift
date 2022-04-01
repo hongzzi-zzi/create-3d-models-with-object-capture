@@ -43,7 +43,7 @@ class CameraViewModel: ObservableObject {
 
     /// This property returns `true` if depth data is supported and available on this device. By default,
     /// the app tries to turn depth data on during setup and sets this to `true` if successful.
-    @Published var isDepthDataEnabled: Bool = false
+    @Published var isDepthDataEnabled: Bool = true
 
     /// This property returns `true` if motion data is available and enabled. By default, the app tries to
     /// enable motion data during setup and sets this to `true` if successful.
@@ -107,7 +107,7 @@ class CameraViewModel: ObservableObject {
     static let maxPhotosAllowed = 250
     static let recommendedMinPhotos = 30
     static let recommendedMaxPhotos = 200
-    static let defaultAutomaticCaptureIntervalSecs: Double = 3.0
+    static let defaultAutomaticCaptureIntervalSecs: Double = 0.5 // MTEST 3.0
 
     init() {
         session = AVCaptureSession()
@@ -175,6 +175,8 @@ class CameraViewModel: ObservableObject {
     }
 
     func addCapture(_ capture: Capture) {
+//        Capture(id: photoId, photo: photoData, depthData: depthMapData,
+//                                 gravity: gravity)
         logger.log("Received a new capture id=\(capture.id)")
 
         // Cache the most recent capture on the main queue.
@@ -190,6 +192,7 @@ class CameraViewModel: ObservableObject {
             do {
                 // Write the files, then reload the folder to keep it in sync.
                 try capture.writeAllFiles(to: self.captureDir!)
+
                 self.captureFolderState?.requestLoad()
             } catch {
                 logger.error("Can't write capture id=\(capture.id) error=\(String(describing: error))")
@@ -344,9 +347,9 @@ class CameraViewModel: ObservableObject {
             var photoSettings = AVCapturePhotoSettings()
 
             // Request HEIF photos if supported and enable high-resolution photos.
-            if  self.photoOutput.availablePhotoCodecTypes.contains(.hevc) {
+            if  self.photoOutput.availablePhotoCodecTypes.contains(.jpeg) {
                 photoSettings = AVCapturePhotoSettings(
-                    format: [AVVideoCodecKey: AVVideoCodecType.hevc])
+                    format: [AVVideoCodecKey: AVVideoCodecType.jpeg])
             }
 
             // Turn off the flash. The app relies on ambient lighting to avoid specular highlights.
@@ -360,7 +363,7 @@ class CameraViewModel: ObservableObject {
             photoSettings.photoQualityPrioritization = self.photoQualityPrioritizationMode
 
             // Request that the camera embed a depth map into the HEIC output file.
-            photoSettings.embedsDepthDataInPhoto = true
+            photoSettings.embedsDepthDataInPhoto = false //true
 
             // Specify a preview image.
             if !photoSettings.__availablePreviewPhotoPixelFormatTypes.isEmpty {

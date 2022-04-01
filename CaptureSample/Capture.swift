@@ -12,6 +12,9 @@ import CoreMotion
 import Foundation
 import UIKit
 import os
+import Photos
+import MobileCoreServices // 다양한 타입들을 정의해 놓은 헤더 파일 추가
+
 
 private let logger = Logger(subsystem: "com.apple.sample.CaptureSample",
                             category: "Capture")
@@ -58,7 +61,6 @@ struct Capture: Identifiable {
         writeGravityIfAvailable(to: captureDir)
         writeDepthIfAvailable(to: captureDir)
     }
-    
     // MARK: - Private Helpers
     
     private var photoIdString: String {
@@ -83,12 +85,20 @@ struct Capture: Identifiable {
         print("Saving: \(imageUrl.path)...")
         logger.log("Depth Data = \(String(describing: photo.depthData))")
         do {
-            try photo.fileDataRepresentation()!
-                .write(to: URL(fileURLWithPath: imageUrl.path), options: .atomic)
+            // 사진 앨범에 접근 권한을 요청
+            PHPhotoLibrary.requestAuthorization { status in
+                guard status == .authorized
+                else {
+                    logger.error("Can't save img")
+                    return }
+
+                // 사진 앨범에 저장.
+                PHPhotoLibrary.shared().performChanges({
+                    let creationRequest = PHAssetCreationRequest.forAsset()
+                    creationRequest.addResource(with: .photo, data: photo.fileDataRepresentation()!, options: nil)
+                }, completionHandler: nil)
+            }
             return true
-        } catch {
-            logger.error("Can't write image to \"\(imageUrl.path)\" error=\(String(describing: error))")
-            return false
         }
     }
     
@@ -119,11 +129,24 @@ struct Capture: Identifiable {
             logger.warning("No depth data to save!")
             return false
         }
-        
         let depthMapUrl = CaptureInfo.depthUrl(in: captureDir, id: id)
         logger.log("Writing depth data to path=\"\(depthMapUrl.path)\"...")
         do {
             try depthMapData.write(to: URL(fileURLWithPath: depthMapUrl.path), options: .atomic)
+            // 사진 앨범에 접근 권한을 요청
+            PHPhotoLibrary.requestAuthorization { status in
+                guard status == .authorized
+                else {
+                    logger.error("Can't save depthdata")
+                    return }
+
+                // 사진 앨범에 저장.
+                PHPhotoLibrary.shared().performChanges({
+                    let creationRequest = PHAssetCreationRequest.forAsset()
+//                    - (void)addResourceWithType:(PHAssetResourceType)type data:(NSData *)data options:(nullable PHAssetResourceCreationOptions *)options;
+                    creationRequest.addResource(with:.photo , data: depthMapData, options: nil)
+                }, completionHandler: nil)
+            }
             return true
         } catch {
             logger.error("Can't write depth tiff to: \"\(depthMapUrl.path)\" error=\(String(describing: error))")
