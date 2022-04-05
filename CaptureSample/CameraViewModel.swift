@@ -9,9 +9,9 @@ import AVFoundation
 import Combine
 import CoreMotion
 import SwiftUI
-
 import os
-
+import AVKit
+import AVFAudio
 private let logger = Logger(subsystem: "com.apple.sample.CaptureSample",
                             category: "CameraViewModel")
 
@@ -117,7 +117,22 @@ class CameraViewModel: ObservableObject {
         // permissions.
         startSetup()
     }
-
+    
+    func changeExposureDuration(device: AVCaptureDevice) {
+        guard let _ = try? device.lockForConfiguration() else {
+                    return
+                }
+        if(device.isExposureModeSupported(AVCaptureDevice.ExposureMode.custom))
+                   {
+//                let minValue = self.device.activeFormat.minExposureDuration.seconds
+//                let maxValue = self.device.activeFormat.maxExposureDuration.seconds
+//                let exposure = (maxValue - minValue) * Double(value) + minValue
+                let duration = CMTime(seconds: 1, preferredTimescale: 120)
+                device.setExposureModeCustom(duration: duration, iso: AVCaptureDevice.currentISO, completionHandler: nil)
+                device.unlockForConfiguration()
+        }
+        }
+  
     /// This method advances through the available capture modes, updating `captureMode`.
     /// This method must be called from the main thread.
     func advanceToNextCaptureMode() {
@@ -129,7 +144,6 @@ class CameraViewModel: ObservableObject {
             captureMode = .manual
         }
     }
-
     /// When the user presses the capture button, this method is called.
     /// If captureMode is `.manual`, this method triggers a single image capture.
     /// If captureMode is `.automatic`, this method toggles the automatic capture timer on and off.
@@ -218,8 +232,9 @@ class CameraViewModel: ObservableObject {
 
         // If authorization fails, set setupResult to .unauthorized.
         requestAuthorizationIfNeeded()
-        sessionQueue.async {
+        sessionQueue.async { [self] in
             self.configureSession()
+//            self.configureCameraForHighestFrameRate(device: self.getVideoDeviceForPhotogrammetry())
         }
 
         if motionManager.isDeviceMotionAvailable {
@@ -320,6 +335,7 @@ class CameraViewModel: ObservableObject {
     private let motionManager = CMMotionManager()
 
     private var photoOutput = AVCapturePhotoOutput()
+
 
     /// This property holds references to active `PhotoCaptureProcessor` instances. The app removes
     /// instances when the corresponding capture is complete.
@@ -534,6 +550,7 @@ class CameraViewModel: ObservableObject {
         // Setup was successful, so set this value to tell the UI to enable
         // the capture buttons.
         setupResult = .success
+//        configureCameraForHighestFrameRate(device:)
     }
 
     private func addPhotoOutputOrThrow() throws {
@@ -575,6 +592,8 @@ class CameraViewModel: ObservableObject {
             logger.error("Back video device is unavailable.")
             throw SessionSetupError.configurationFailed
         }
+        changeExposureDuration(device: videoDevice)
+
         return videoDevice
     }
 }

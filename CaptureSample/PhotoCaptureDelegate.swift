@@ -10,7 +10,6 @@ import AVFoundation
 import CoreImage
 import CoreMotion
 import os
-
 private let logger = Logger(subsystem: "com.apple.sample.CaptureSample",
                             category: "PhotoCaptureDelegate")
 
